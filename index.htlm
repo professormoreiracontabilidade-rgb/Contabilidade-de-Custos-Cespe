@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Professor Moreira Premium - CEBRASPE Custos Teórico</title>
+<style>
+    :root {
+        --azul-escuro: #082b5f;
+        --azul: #1257a7;
+        --azul-claro: #dff0ff;
+        --rosa: #ffd6e8;
+        --verde: #dff7e7;
+        --amarelo: #fff2a8;
+        --cinza: #f3f6fb;
+        --preto: #050505;
+        --sombra: rgba(0,0,0,.18);
+    }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Arial, Helvetica, sans-serif;
+        background: #eef5ff;
+        color: var(--preto);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    .stage {
+        width: 100vw;
+        height: 56.25vw;
+        max-height: 100vh;
+        max-width: 177.78vh;
+        background: white;
+        border: 8px solid var(--azul-escuro);
+        border-radius: 18px;
+        box-shadow: 0 18px 38px var(--sombra);
+        overflow: hidden;
+        display: grid;
+        grid-template-rows: 58px 1fr 46px;
+    }
+    header {
+        background: linear-gradient(90deg, var(--azul-escuro), var(--azul));
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 22px;
+        gap: 12px;
+    }
+    header h1 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 900;
+        letter-spacing: .2px;
+        white-space: nowrap;
+    }
+    header .zap {
+        font-size: 15px;
+        font-weight: 800;
+        opacity: .95;
+        white-space: nowrap;
+    }
+    main {
+        display: grid;
+        grid-template-columns: 45% 55%;
+        min-height: 0;
+        background: #f7fbff;
+    }
+    .left {
+        padding: 14px 14px 10px 18px;
+        border-right: 4px solid var(--azul-escuro);
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        gap: 10px;
+        min-height: 0;
+    }
+    .question-card {
+        background: var(--rosa);
+        border: 3px solid var(--azul-escuro);
+        border-radius: 18px;
+        padding: 12px;
+        overflow-y: auto;
+        box-shadow: 0 8px 18px rgba(0,0,0,.12);
+    }
+    .banca {
+        font-size: 13px;
+        font-weight: 900;
+        color: var(--azul-escuro);
+        background: white;
+        border-radius: 10px;
+        padding: 7px 9px;
+        margin-bottom: 8px;
+        line-height: 1.25;
+    }
+    .qtext {
+        white-space: pre-wrap;
+        font-size: 17px;
+        line-height: 1.36;
+        font-weight: 600;
+        color: #000;
+    }
+    .options {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 10px;
+    }
+    .opt {
+        background: white;
+        border: 2px solid var(--azul-escuro);
+        border-radius: 12px;
+        padding: 8px;
+        text-align: center;
+        font-size: 16px;
+        font-weight: 900;
+    }
+    .answer-area {
+        display: grid;
+        grid-template-rows: auto 1fr;
+        min-height: 145px;
+        gap: 7px;
+    }
+    .answer-area label {
+        font-size: 15px;
+        font-weight: 900;
+        color: var(--azul-escuro);
+    }
+    textarea {
+        width: 100%;
+        height: 100%;
+        resize: none;
+        border: 3px solid var(--azul-escuro);
+        border-radius: 14px;
+        padding: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        outline: none;
+        background: #fff;
+        color: #000;
+    }
+    .left-buttons {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 8px;
+    }
+    button {
+        border: none;
+        border-radius: 13px;
+        background: var(--azul-escuro);
+        color: white;
+        font-size: 15px;
+        font-weight: 900;
+        padding: 10px 8px;
+        cursor: pointer;
+        box-shadow: 0 5px 12px rgba(0,0,0,.2);
+    }
+    button:hover { filter: brightness(1.08); }
+    button:active { transform: scale(.98); }
+    .right {
+        padding: 14px 18px 10px 14px;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        gap: 10px;
+        min-height: 0;
+        background: linear-gradient(180deg, #f8fbff, #edf5ff);
+    }
+    .wacom-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+    .wacom-title h2 {
+        margin: 0;
+        font-size: 20px;
+        color: var(--azul-escuro);
+        font-weight: 1000;
+    }
+    .counter {
+        background: var(--azul-escuro);
+        color: white;
+        border-radius: 999px;
+        padding: 8px 12px;
+        font-size: 15px;
+        font-weight: 900;
+    }
+    .board-wrap {
+        position: relative;
+        min-height: 0;
+        background: #e4ebf5;
+        border-radius: 18px;
+        padding: 20px 20px 34px 38px;
+        border: 3px solid #b7c7da;
+        box-shadow: inset 0 0 0 2px rgba(255,255,255,.7);
+    }
+    .ruler-h {
+        position: absolute;
+        left: 38px;
+        right: 18px;
+        bottom: 8px;
+        height: 18px;
+        background: repeating-linear-gradient(90deg, #ffffff 0, #ffffff 12px, #cbd5e1 13px);
+        border: 1px solid #94a3b8;
+        border-radius: 4px;
+    }
+    .ruler-v {
+        position: absolute;
+        left: 8px;
+        top: 20px;
+        bottom: 34px;
+        width: 18px;
+        background: repeating-linear-gradient(180deg, #ffffff 0, #ffffff 12px, #cbd5e1 13px);
+        border: 1px solid #94a3b8;
+        border-radius: 4px;
+    }
+    .board {
+        height: 100%;
+        background:
+            linear-gradient(#eef3f9 1px, transparent 1px),
+            linear-gradient(90deg, #eef3f9 1px, transparent 1px),
+            white;
+        background-size: 28px 28px;
+        border: 4px solid var(--azul-escuro);
+        border-radius: 18px;
+        overflow-y: auto;
+        padding: 18px;
+        position: relative;
+    }
+    .pause {
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        color: var(--azul-escuro);
+        font-size: 32px;
+        font-weight: 1000;
+        line-height: 1.2;
+        padding: 20px;
+    }
+    .solution {
+        display: none;
+        background: var(--azul-claro);
+        border: 4px solid var(--azul-escuro);
+        border-radius: 18px;
+        padding: 16px;
+        color: #000;
+        box-shadow: 0 8px 18px rgba(0,0,0,.12);
+    }
+    .solution.show { display: block; }
+    .sol-title {
+        font-size: 26px;
+        font-weight: 1000;
+        color: var(--azul-escuro);
+        margin-bottom: 10px;
+    }
+    .gab {
+        font-size: 26px;
+        font-weight: 1000;
+        background: white;
+        border: 3px solid var(--azul-escuro);
+        border-radius: 14px;
+        padding: 10px;
+        text-align: center;
+        margin-bottom: 12px;
+    }
+    .exp {
+        font-size: 20px;
+        line-height: 1.35;
+        font-weight: 800;
+        white-space: pre-wrap;
+    }
+    .student-answer {
+        margin-top: 12px;
+        background: #fff;
+        border: 2px dashed var(--azul-escuro);
+        border-radius: 14px;
+        padding: 10px;
+        font-size: 16px;
+        font-weight: 700;
+        white-space: pre-wrap;
+    }
+    .tools {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        justify-content: center;
+        min-height: 36px;
+    }
+    .tool {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        background: white;
+        border: 2px solid #cbd5e1;
+        border-radius: 999px;
+        padding: 5px 9px;
+        font-size: 12px;
+        font-weight: 900;
+        color: var(--azul-escuro);
+    }
+    .pen {
+        width: 38px;
+        height: 7px;
+        border-radius: 999px;
+        background: #111;
+        display: inline-block;
+    }
+    .pen.blue { background: #0b57d0; }
+    .pen.red { background: #d00000; }
+    .marker { background: #ffe66b; height: 11px; }
+    footer {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: 12px;
+        padding: 0 18px;
+        background: #f8fafc;
+        border-top: 2px solid #d6e2f0;
+        color: var(--azul-escuro);
+        font-weight: 900;
+        font-size: 14px;
+    }
+    .progress {
+        height: 12px;
+        background: #d9e7f7;
+        border-radius: 999px;
+        overflow: hidden;
+    }
+    .bar {
+        height: 100%;
+        width: 2%;
+        background: var(--azul);
+        transition: width .25s ease;
+    }
+    @media (max-width: 900px) {
+        .stage {
+            width: 100vw;
+            height: 100vh;
+            max-height: none;
+            max-width: none;
+            border-radius: 0;
+            border-width: 4px;
+            grid-template-rows: auto 1fr auto;
+        }
+        header h1 { font-size: 16px; white-space: normal; }
+        header .zap { font-size: 12px; }
+        main { grid-template-columns: 1fr; grid-template-rows: 52% 48%; }
+        .left { border-right: none; border-bottom: 4px solid var(--azul-escuro); }
+        .qtext { font-size: 15px; }
+        .pause { font-size: 24px; }
+        .exp { font-size: 16px; }
+        .sol-title,.gab { font-size: 20px; }
+    }
+</style>
+</head>
+<body>
+<div class="stage">
+    <header>
+        <h1>Curso de Contabilidade Professor Moreira • Premium YouTube Edition</h1>
+        <div class="zap">WhatsApp: (61) 98532-3574</div>
+    </header>
+
+    <main>
+        <section class="left">
+            <div class="question-card">
+                <div class="banca" id="banca"></div>
+                <div class="qtext" id="question"></div>
+                <div class="options">
+                    <div class="opt">Certo</div>
+                    <div class="opt">Errado</div>
+                </div>
+            </div>
+
+            <div class="answer-area">
+                <label for="studentAnswer">Resposta do aluno / justificativa:</label>
+                <textarea id="studentAnswer" placeholder="Digite aqui sua resposta antes de conferir..."></textarea>
+            </div>
+
+            <div class="left-buttons">
+                <button onclick="prevQuestion()">← Voltar</button>
+                <button onclick="checkAnswer()">Conferir</button>
+                <button onclick="nextQuestion()">Avançar →</button>
+            </div>
+        </section>
+
+        <section class="right">
+            <div class="wacom-title">
+                <h2>Mesa Wacom • Lousa Digital</h2>
+                <div class="counter" id="counter">1/50</div>
+            </div>
+
+            <div class="board-wrap">
+                <div class="ruler-v"></div>
+                <div class="ruler-h"></div>
+                <div class="board" id="board">
+                    <div class="pause" id="pauseText">
+                        PARE O VÍDEO<br>
+                        RESPONDA<br>
+                        E DEPOIS CLIQUE EM CONFERIR
+                    </div>
+                    <div class="solution" id="solution">
+                        <div class="sol-title">Resposta comentada</div>
+                        <div class="gab" id="gab"></div>
+                        <div class="exp" id="exp"></div>
+                        <div class="student-answer" id="studentAnswerShow"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tools">
+                <div class="tool"><span class="pen blue"></span>Caneta azul</div>
+                <div class="tool"><span class="pen red"></span>Caneta vermelha</div>
+                <div class="tool"><span class="pen"></span>Caneta preta</div>
+                <div class="tool"><span class="pen marker"></span>Marca-texto</div>
+                <div class="tool">Borracha</div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <span id="footerInfo">Questões teóricas CEBRASPE</span>
+        <div class="progress"><div class="bar" id="bar"></div></div>
+        <span>Use em aula, YouTube ou PowerPoint</span>
+    </footer>
+</div>
+
+<script>
+const cards = [{"orig_num": 1, "banca": "CEBRASPE (CESPE) - PCF/PF/Área 1/2025", "body": "Em relação a custos, julgue o item seguinte.\n\nPara que os custos sejam relevantes, é necessário que ocorram no futuro e sejam diferentes dos custos de decisão alternativos.", "gabarito": "Certo", "seq": 1, "explicacao": "A assertiva está correta conforme o gabarito. O ponto central é distinguir corretamente terminologia de custos, classificação, custeio e finalidade gerencial da informação."}, {"orig_num": 2, "banca": "CEBRASPE (CESPE) - PCF/PF/Área 1/2025", "body": "Em relação a custos, julgue o item seguinte.\n \n\nO fornecimento de dados para a determinação de padrões que permitam antecipar o desempenho futuro da entidade é uma aplicação da contabilidade de custos.", "gabarito": "Certo", "seq": 2, "explicacao": "A contabilidade de custos ajuda no planejamento e no controle, fornecendo dados para padrões, orçamentos, previsões e comparação entre o planejado e o realizado."}, {"orig_num": 3, "banca": "CEBRASPE (CESPE) - AGP (SEPLAG CE)/SEPLAG CE/Contabilidade Pública/2024", "body": "Quanto aos conceitos gerais e à terminologia aplicável à contabilidade de custos, julgue o item a seguir.\n \n\nEm decorrência do princípio da materialidade, pode-se desobrigar a entidade de dar tratamento mais rigoroso aos itens cujo valor monetário seja pequeno quando comparado com os gastos totais.", "gabarito": "Certo", "seq": 3, "explicacao": "Pela materialidade, itens de pequeno valor podem receber tratamento mais simples, desde que isso não distorça a informação contábil de forma relevante."}, {"orig_num": 4, "banca": "CEBRASPE (CESPE) - AGP (SEPLAG CE)/SEPLAG CE/Contabilidade Pública/2024", "body": "Quanto aos conceitos gerais e à terminologia aplicável à contabilidade de custos, julgue o item a seguir.\n \n\nConforme o princípio da confrontação entre despesas e receitas, após o reconhecimento da receita, devem ser dela deduzidos todos os valores representativos dos esforços para a sua consecução.", "gabarito": "Certo", "seq": 4, "explicacao": "Pelo princípio da confrontação, os gastos necessários para gerar uma receita devem ser reconhecidos no mesmo período da respectiva receita."}, {"orig_num": 5, "banca": "CEBRASPE (CESPE) - AA (ANM)/ANM/Contabilidade/2025", "body": "No que se refere aos sistemas de apuração de custos, julgue o item subsequente.\n \n\nA aquisição de matérias-primas para posterior utilização no processo industrial é um investimento.", "gabarito": "Certo", "seq": 5, "explicacao": "A matéria-prima comprada para uso futuro é registrada como investimento/estoque. Ela só se transforma em custo quando é consumida na produção."}, {"orig_num": 6, "banca": "CEBRASPE (CESPE) - PPNT (PETROBRAS)/PETROBRAS/Suprimento de Bens e Serviços/Administração/2024", "body": "Julgue o item a seguir, a respeito de receitas, despesas, custos e resultados.\n \n\nA compra de matéria-prima com vistas à futura elaboração de produtos que serão vendidos é um tipo de custo.", "gabarito": "Errado", "seq": 6, "explicacao": "A compra de matéria-prima para uso futuro ainda não é custo. No momento da aquisição, representa investimento em estoque; o custo surge quando há consumo na produção."}, {"orig_num": 7, "banca": "CEBRASPE (CESPE) - AGP (SEPLAG CE)/SEPLAG CE/Contabilidade Pública/2024", "body": "Quanto aos conceitos gerais e à terminologia aplicável à contabilidade de custos, julgue o item a seguir.\n\nO conceito de gasto abrange os desembolsos, a promessa de entrega de ativos e o custo de oportunidade.", "gabarito": "Errado", "seq": 7, "explicacao": "Gasto envolve sacrifício financeiro efetivo ou obrigação assumida para adquirir bem ou serviço. Custo de oportunidade é conceito econômico, não gasto contábil propriamente dito."}, {"orig_num": 8, "banca": "CEBRASPE (CESPE) - AFTM (Pref Mossoró)/Pref Mossoró/Ciências Contábeis/2024", "body": "Julgue o item subsequente, relativo a conceitos gerais e terminologia em contabilidade de custos, bem como à classificação de custos.\n\nSe uma empilhadeira, ao levar um lote de produtos acabados ao estoque, sofrer um acidente, destruindo-se, com isso, todo o lote, tal evento caracterizará uma perda no processo produtivo.", "gabarito": "Errado", "seq": 8, "explicacao": "A perda descrita ocorre após a fabricação, no deslocamento ao estoque de produtos acabados. Não é perda normal do processo produtivo, mas perda anormal."}, {"orig_num": 9, "banca": "CEBRASPE (CESPE) - AFTM (Pref Mossoró)/Pref Mossoró/Ciências Contábeis/2024", "body": "Julgue o item subsequente, relativo a conceitos gerais e terminologia em contabilidade de custos, bem como à classificação de custos.\n \n\nA matéria-prima só constitui um custo quando é consumida no processo de produção, sendo um investimento no momento em que é adquirida com a finalidade de produção futura.", "gabarito": "Certo", "seq": 9, "explicacao": "A assertiva está correta: matéria-prima adquirida é investimento; matéria-prima consumida na fabricação é custo de produção."}, {"orig_num": 10, "banca": "CEBRASPE (CESPE) - PPNT (PETROBRAS)/PETROBRAS/Suprimento de Bens e Serviços/Administração/2023", "body": "Em relação a receitas, despesas, custos e resultados contábeis, julgue o item subsequente.\n \n\nO custo de um item estocado transforma-se em um tipo de despesa quando esse bem é transferido a um terceiro pela venda.", "gabarito": "Certo", "seq": 10, "explicacao": "O custo acumulado no estoque transforma-se em despesa quando o produto é vendido, normalmente como custo do produto vendido ou custo da mercadoria vendida."}, {"orig_num": 11, "banca": "CEBRASPE (CESPE) - PPNT (PETROBRAS)/PETROBRAS/Suprimento de Bens e Serviços/Administração/2023", "body": "Em relação a receitas, despesas, custos e resultados contábeis, julgue o item subsequente.\n \n\nO consumo de um recurso ou serviço para a produção de outro bem ou serviço constitui um custo.", "gabarito": "Certo", "seq": 11, "explicacao": "Custo é o gasto relativo a bem ou serviço utilizado na produção de outro bem ou serviço."}, {"orig_num": 12, "banca": "CEBRASPE (CESPE) - ATM (Pref Fortaleza)/Pref Fortaleza/2023", "body": "Com relação a conceitos, terminologias e classificações aplicáveis à contabilidade de custos, julgue o item a seguir.\n\nO combustível consumido pelas empresas industriais para efetuar a entrega dos produtos adquiridos por seus clientes deve compor o custo dos referidos produtos.", "gabarito": "Errado", "seq": 12, "explicacao": "Gastos com entrega ao cliente são despesas de venda/distribuição. Não compõem o custo de fabricação dos produtos."}, {"orig_num": 13, "banca": "CEBRASPE (CESPE) - Ana TI (DATAPREV)/DATAPREV/Gestão Econômica-Financeira/2023", "body": "Com relação aos métodos de custeio e à integração da contabilidade de custos com a contabilidade convencional, julgue o item a seguir.\n \n\nApós ter o seu cálculo efetuado com base nos preceitos da contabilidade de custos, o valor dos insumos utilizados na produção de bens que envolvam processos de fabricação de curta duração será acumulado na forma de estoques, devendo ser lançado como despesa quando se der o reconhecimento da receita gerada com a venda dos bens produzidos com a utilização dos referidos insumos.", "gabarito": "Certo", "seq": 13, "explicacao": "Os insumos consumidos na fabricação formam o custo do estoque. Esse valor só vira despesa quando a receita da venda é reconhecida."}, {"orig_num": 14, "banca": "CEBRASPE (CESPE) - Ana TI (DATAPREV)/DATAPREV/ Logística, Aquisições e Contratos/2023", "body": "Julgue o item subsequente, relativo a depreciações, alterações e baixas de bem.\n \n\nEm termos contábeis, a depreciação pode ser classificada como despesa ou como custo.", "gabarito": "Certo", "seq": 14, "explicacao": "A depreciação pode ser custo quando ligada à produção e despesa quando ligada à administração ou às vendas."}, {"orig_num": 15, "banca": "CEBRASPE (CESPE) - Ana Jr (TBG)/TBG/Contábil/2023", "body": "Julgue o item subsequente, a respeito da contabilidade de custos e suas aplicações.\n\nGastos são todos os dispêndios realizados em uma entidade para adquirir um produto ou serviço, independentemente de ser um custo ou uma despesa.", "gabarito": "Certo", "seq": 15, "explicacao": "Gasto é o sacrifício para obtenção de bem ou serviço. Depois, conforme o uso, pode ser classificado como investimento, custo, despesa ou perda."}, {"orig_num": 16, "banca": "CEBRASPE (CESPE) - PPNS (PETROBRAS)/PETROBRAS/Engenharia de Produção/2022", "body": "Com relação aos conceitos de contabilidade e gestão de custos, julgue o item que se segue.\n\nFazem parte dos custos de uma empresa que produz determinado produto os gastos relacionados com a manufatura desse produto, como, por exemplo, matéria- prima, energia, setor comercial e marketing.", "gabarito": "Errado", "seq": 16, "explicacao": "Matéria-prima e energia da fábrica podem ser custos. Já setor comercial e marketing são despesas, pois estão ligados à venda e não à fabricação."}, {"orig_num": 17, "banca": "CEBRASPE (CESPE) - Aud Est (SECONT ES)/SECONT ES/Ciências Contábeis/2022", "body": "Relativamente aos métodos e sistemas de apuração de custos, julgue o item seguinte.\n \n\nOs insumos adquiridos para transformação industrial representam um investimento que será transformado em custo no processo de transformação.", "gabarito": "Certo", "seq": 17, "explicacao": "Insumos comprados para transformação industrial são investimentos inicialmente; quando consumidos, tornam-se custos de produção."}, {"orig_num": 20, "banca": "CEBRASPE (CESPE) - AA (ANM)/ANM/Contabilidade/2025", "body": "No que se refere aos sistemas de apuração de custos, julgue o item subsequente.\n\nA escolha do critério de alocação adequado para cada tipo de custo indireto, fixo ou variável, pode eliminar a imprecisão na alocação desse tipo de custo aos produtos.", "gabarito": "Errado", "seq": 18, "explicacao": "O critério adequado reduz distorções, mas não elimina totalmente a imprecisão dos custos indiretos, pois sempre há algum grau de estimativa ou rateio."}, {"orig_num": 21, "banca": "CEBRASPE (CESPE) - Cont (FUB)/FUB/2025", "body": "Julgue o item a seguir, que versa sobre contabilidade de custos.\n \n\nO valor do custo fixo unitário de um produto deve permanecer constante ainda que a quantidade de unidades fabricadas desse produto diminua.", "gabarito": "Errado", "seq": 19, "explicacao": "O custo fixo total tende a permanecer constante dentro da faixa relevante, mas o custo fixo unitário muda conforme a quantidade produzida."}, {"orig_num": 22, "banca": "CEBRASPE (CESPE) - Ana Proc (PGM Mossoró)/Pref Mossoró/Contabilidade/2024", "body": "Julgue o item seguinte, que versam sobre retificação de erros contábeis, custos, consolidação de demonstrações contábeis, transações com partes relacionadas e análise das demonstrações contábeis.\n \n\nA empresa industrial que utiliza determinado material na fabricação de diversos produtos, mas que não consegue identificar o quanto do material é destinado à produção de cada um desses produtos, deve classificá-lo como um custo indireto de produção variável.", "gabarito": "Certo", "seq": 20, "explicacao": "Se o material é usado na fabricação, mas não pode ser identificado diretamente em cada produto, ele é custo indireto. Se varia com a produção, é variável."}, {"orig_num": 24, "banca": "CEBRASPE (CESPE) - ATM (Pref Fortaleza)/Pref Fortaleza/2023", "body": "Com relação a conceitos, terminologias e classificações aplicáveis à contabilidade de custos, julgue o item a seguir.\n \n\nO aluguel devido pela utilização de um galpão destinado à produção, cujo contrato prevê reajuste mensal com base na inflação do período, deve ser classificado como custo variável.", "gabarito": "Errado", "seq": 21, "explicacao": "Aluguel de galpão produtivo é custo de produção, mas normalmente fixo. Reajuste por inflação não o transforma em custo variável de produção."}, {"orig_num": 25, "banca": "CEBRASPE (CESPE) - ATM (Pref Fortaleza)/Pref Fortaleza/2023", "body": "Com relação a conceitos, terminologias e classificações aplicáveis à contabilidade de custos, julgue o item a seguir.\n \n\nA depreciação das máquinas utilizadas no processo de fabricação de mais de um produto é classificada como um custo indireto, devendo o seu valor ser apropriado aos produtos com base em critérios de alocação e taxas de rateio.", "gabarito": "Certo", "seq": 22, "explicacao": "Quando a máquina atende a mais de um produto, a depreciação não é diretamente identificável em cada produto, sendo apropriada por rateio como custo indireto."}, {"orig_num": 26, "banca": "CEBRASPE (CESPE) - Ana TI (DATAPREV)/DATAPREV/Gestão Econômica-Financeira/2023", "body": "Com relação à fixação de preço de venda com base em custos e à gestão operacional de centros de custo, julgue o item a seguir.\n \n\nNa gestão por centros de custo, a classificação dos gastos fabris em diretos ou indiretos e em fixos ou variáveis é determinante para a avaliação da presença da controlabilidade na incorrência desses gastos.", "gabarito": "Errado", "seq": 23, "explicacao": "A assertiva está incorreta conforme o gabarito. O ponto central é distinguir corretamente terminologia de custos, classificação, custeio e finalidade gerencial da informação."}, {"orig_num": 27, "banca": "CEBRASPE (CESPE) - Ana Jr (TBG)/TBG/Contábil/2023", "body": "Julgue o item subsequente, a respeito da contabilidade de custos e suas aplicações.\n \n\nCustos fixos são aqueles cujo valor se modifica, por unidade produzida, inversamente ao comportamento do volume produzido, ao passo que custos variáveis tendem a ser constantes por unidade.", "gabarito": "Certo", "seq": 24, "explicacao": "O custo fixo unitário varia inversamente ao volume; o custo variável tende a permanecer constante por unidade dentro da faixa relevante."}, {"orig_num": 28, "banca": "CEBRASPE (CESPE) - Ana Jr (TBG)/TBG/Gestão/2023", "body": "No que tange ao planejamento e orçamento, julgue o item a seguir.\n\nOs custos diretos são os que podem ser apropriados diretamente a cada tipo de bem ou função no momento de sua ocorrência, tais como os custos com mão de obra, ainda que não sejam mensuráveis em um produto ou serviço executado.", "gabarito": "Errado", "seq": 25, "explicacao": "Custos diretos precisam ser mensuráveis e apropriáveis diretamente ao produto ou serviço. Se não forem mensuráveis diretamente, não são diretos."}, {"orig_num": 29, "banca": "CEBRASPE (CESPE) - Ana Jr (TBG)/TBG/Gestão/2023", "body": "No que tange ao planejamento e orçamento, julgue o item a seguir.\n \n\nOs custos variáveis são aqueles que se alteram de maneira proporcional à variação do volume de produção.", "gabarito": "Certo", "seq": 26, "explicacao": "Custos variáveis mudam, em regra, proporcionalmente ao volume de produção, dentro da faixa relevante de atividade."}, {"orig_num": 30, "banca": "CEBRASPE (CESPE) - PPNS (PETROBRAS)/PETROBRAS/Engenharia de Produção/2022", "body": "Com relação aos conceitos de contabilidade e gestão de custos, julgue o item que se segue.\n \n\nEm uma empresa produtora de um tipo de autopeça, o custo relacionado ao aluguel do espaço que é compartilhado pela fábrica e pelo setor administrativo é um exemplo de custo fixo e direto.", "gabarito": "Errado", "seq": 27, "explicacao": "A assertiva está incorreta conforme o gabarito. O ponto central é distinguir corretamente terminologia de custos, classificação, custeio e finalidade gerencial da informação."}, {"orig_num": 31, "banca": "CEBRASPE (CESPE) - Esp GT (TELEBRAS)/TELEBRAS/Analista Superior/Finanças/2022", "body": "Relativamente às metodologias de custeio para fins de avaliação de estoques e para a tomada de decisões, julgue o item que se segue.\n \n\nPara fins de planejamento e gestão, é relevante o fato de os custos variáveis serem praticamente fixos por unidade de produto e os custos fixos serem quase que totalmente variáveis por unidade de produto, ainda que de forma inversamente proporcional.", "gabarito": "Certo", "seq": 28, "explicacao": "Na análise gerencial, custos variáveis tendem a ser constantes por unidade, e custos fixos variam por unidade de forma inversa ao volume."}, {"orig_num": 32, "banca": "CEBRASPE (CESPE) - Esp GT (TELEBRAS)/TELEBRAS/Analista Superior/Finanças/2022", "body": "Com relação ao estudo da relação custo versus volume versus lucro, julgue o próximo item.\n \n\nA visão dos custos variáveis como diretamente proporcionais ao volume produzido e dos custos fixos como constantes ao longo do tempo é uma abstração contábil, ou seja, não corresponde à realidade econômica.", "gabarito": "Certo", "seq": 29, "explicacao": "A separação entre custo fixo constante e variável proporcional é uma simplificação útil para análise, mas a realidade econômica pode apresentar variações."}, {"orig_num": 33, "banca": "CEBRASPE (CESPE) - Aud Est (SECONT ES)/SECONT ES/Ciências Contábeis/2022", "body": "Relativamente aos métodos e sistemas de apuração de custos, julgue o item seguinte.\n \n\nA depreciação de uma máquina industrial pode representar tanto um custo indireto quanto um custo direto, conforme a metodologia de cálculo empregada.", "gabarito": "Certo", "seq": 30, "explicacao": "A depreciação pode ser direta se ligada a um produto específico, ou indireta se a máquina for usada para diversos produtos."}, {"orig_num": 34, "banca": "CEBRASPE (CESPE) - Aud Est (SECONT ES)/SECONT ES/Ciências Contábeis/2022", "body": "Relativamente aos métodos e sistemas de apuração de custos, julgue o item seguinte.\n \n\nCustos variáveis, em contabilidade de custos, são aqueles que variam de forma diretamente proporcional ao volume de produção, seja qual for esse volume.", "gabarito": "Errado", "seq": 31, "explicacao": "A assertiva está incorreta conforme o gabarito. O ponto central é distinguir corretamente terminologia de custos, classificação, custeio e finalidade gerencial da informação."}, {"orig_num": 38, "banca": "CEBRASPE (CESPE) - Ana Min (MPE CE)/MPE CE/Ciências Contábeis/2020", "body": "A respeito dos sistemas de custos e de informações gerenciais, julgue o item subsequente.\n \n\nOs sistemas de custeio levam em consideração principalmente a segregação entre custos fixos e variáveis, para que possam ser feitos a análise de ponto de equilíbrio e o cálculo do custo unitário do produto.", "gabarito": "Errado", "seq": 32, "explicacao": "A assertiva está incorreta conforme o gabarito. O ponto central é distinguir corretamente terminologia de custos, classificação, custeio e finalidade gerencial da informação."}, {"orig_num": 39, "banca": "CEBRASPE (CESPE) - AA (ANM)/ANM/Contabilidade/2025", "body": "No que se refere aos sistemas de apuração de custos, julgue o item subsequente.\n \n\nPara fins societários e fiscais, a metodologia de custeio variável é a mais adequada.", "gabarito": "Errado", "seq": 33, "explicacao": "Para fins societários e fiscais, o método aceito é o custeio por absorção. O custeio variável é utilizado principalmente para fins gerenciais."}, {"orig_num": 40, "banca": "CEBRASPE (CESPE) - ERM (ANM)/ANM/Economia ou Contabilidade/2025", "body": "A respeito dos métodos de custeio de mercadorias, produtos e serviços e da avaliação gerencial desses custos, julgue o item subsequente.\n \n\nSegundo o método do custeio por absorção, todos os gastos nos quais se incorreu para a geração de um produto para venda, sejam matérias-primas, seja mão de obra direta, sejam custos indiretos de produção, sejam despesas — fixas ou variáveis —, devem ser incorporados ao custo dos produtos.", "gabarito": "Errado", "seq": 34, "explicacao": "No custeio por absorção, somente custos de produção compõem o custo dos produtos. Despesas não são incorporadas ao estoque."}, {"orig_num": 42, "banca": "CEBRASPE (CESPE) - AFTM (Pref Mossoró)/Pref Mossoró/\"Sem Área\"/2024", "body": "Julgue o próximo item, referente à distribuição de resultados, ao cálculo do custo dos produtos e à consolidação de demonstrações contábeis.\n \n\nNo custeio por absorção, os gastos incorridos para se efetuar a venda dos produtos fabricados pela empresa devem ser contemplados no cálculo do custo dos produtos.", "gabarito": "Errado", "seq": 35, "explicacao": "Gastos para vender produtos são despesas de venda, não custos de produção. Portanto, não entram no custo dos produtos fabricados."}, {"orig_num": 43, "banca": "CEBRASPE (CESPE) - ERSPT (ANATEL)/ANATEL/Contabilidade (Ciências Contábeis)/2024", "body": "A respeito da contabilidade de custos, julgue o item subsequente.\n \n\nNo custeio por absorção, todos os gastos relativos ao esforço de produção são distribuídos para todos os produtos ou serviços feitos.", "gabarito": "Certo", "seq": 36, "explicacao": "No custeio por absorção, todos os custos de produção, fixos e variáveis, diretos e indiretos, são atribuídos aos produtos."}, {"orig_num": 44, "banca": "CEBRASPE (CESPE) - AJ STJ/STJ/Apoio Especializado/Contadoria/2024", "body": "No que concerne aos sistemas de custeio e às suas aplicações, julgue o item que segue.\n \n\nConsidere que uma empresa inicie um período sem estoques iniciais de produtos em processamento ou de produtos acabados e termine esse período com estoques desses dois tipos. Nessas condições, o resultado apurado pelo custeio variável será menor que o resultado apurado pelo custeio por absorção.", "gabarito": "Certo", "seq": 37, "explicacao": "A assertiva está correta conforme o gabarito. O ponto central é distinguir corretamente terminologia de custos, classificação, custeio e finalidade gerencial da informação."}, {"orig_num": 45, "banca": "CEBRASPE (CESPE) - Ana TI (DATAPREV)/DATAPREV/Gestão Econômica-Financeira/2023", "body": "Com relação aos métodos de custeio e à integração da contabilidade de custos com a contabilidade convencional, julgue o item a seguir.\n \n\nO custeio por absorção é o método de apropriação de custos utilizado para a elaboração das demonstrações contábeis.", "gabarito": "Certo", "seq": 38, "explicacao": "O custeio por absorção é o método usado para mensurar estoques e elaborar demonstrações contábeis para fins societários."}, {"orig_num": 47, "banca": "CEBRASPE (CESPE) - Ana Jr (TBG)/TBG/Gestão/2023", "body": "No que tange ao planejamento e orçamento, julgue o item a seguir.\n \n\nNo método de custeio por absorção, os custos fixos são repartidos entre os produtos de forma equivalente, desconsiderando-se fatores empregados na produção, como o tempo, por exemplo.", "gabarito": "Errado", "seq": 39, "explicacao": "Custos fixos podem ser rateados por critérios que considerem fatores de produção, como horas-máquina, mão de obra ou tempo utilizado."}, {"orig_num": 48, "banca": "CEBRASPE (CESPE) - AFCE (TCE-SC)/TCE SC/Ciências Contábeis/2022", "body": "No que se refere aos custos das mercadorias e dos produtos vendidos e aos métodos de custeio, julgue o seguinte item.\n \n\nPelo método do custeio real por absorção, os custos incorridos para montagem de itens de estoque necessária para sua comercialização devem ser adicionados ao custo do estoque.", "gabarito": "Certo", "seq": 40, "explicacao": "Gastos necessários para deixar o estoque em condição de venda devem ser adicionados ao custo do estoque."}, {"orig_num": 49, "banca": "CEBRASPE (CESPE) - Esp GT (TELEBRAS)/TELEBRAS/Analista Superior/Finanças/2022", "body": "Relativamente às metodologias de custeio para fins de avaliação de estoques e para a tomada de decisões, julgue o item que se segue.\n \n\nA metodologia de custeio por absorção é a única aceita para fins fiscais e societários pois está adequada às necessidades das normas contábeis, ao contrário das metodologias de custeio ABC, custo padrão e RKW.", "gabarito": "Errado", "seq": 41, "explicacao": "O custeio por absorção é aceito para fins fiscais e societários, mas dizer que ABC, custo padrão e RKW são simplesmente inadequados às normas contábeis torna a assertiva incorreta."}, {"orig_num": 51, "banca": "CEBRASPE (CESPE) - AnDR (CODEVASF)/CODEVASF/Contabilidade/2021", "body": "Com relação aos sistemas de custeio para fins de controle, avaliação e gestão, julgue o item seguinte.\n\nApesar de incorporar custos fixos aos custos unitários, o custeio por absorção pode resultar no reconhecimento de gastos produtivos em volume idêntico ao custeio variável.", "gabarito": "Certo", "seq": 42, "explicacao": "A assertiva está correta conforme o gabarito. O ponto central é distinguir corretamente terminologia de custos, classificação, custeio e finalidade gerencial da informação."}, {"orig_num": 52, "banca": "CEBRASPE (CESPE) - AFRDF (SEFAZ DF)/SEFAZ DF/2020", "body": "No que se refere à metodologia do custeio por absorção, julgue o item seguinte.\n \n\nOs custos que podem ser associados aos objetos de custeio sem o uso de modelos matemáticos de rateio são atribuídos a esses objetos na metodologia do custeio por absorção.", "gabarito": "Certo", "seq": 43, "explicacao": "Custos diretamente identificáveis com o objeto de custeio são atribuídos diretamente, sem necessidade de rateio."}, {"orig_num": 53, "banca": "CEBRASPE (CESPE) - AFRDF (SEFAZ DF)/SEFAZ DF/2020", "body": "No que se refere à metodologia do custeio por absorção, julgue o item seguinte.\n \n\nNa metodologia de custeio por absorção, as rubricas necessárias para o controle de custos e estoques diferem no que se refere aos sistemas produtivos empregados: produção por ordem de serviços e produção contínua, respectivamente.", "gabarito": "Errado", "seq": 44, "explicacao": "Os sistemas produtivos podem exigir controles diferentes, mas a assertiva erra ao afirmar essa diferença de forma absoluta para rubricas de custos e estoques."}, {"orig_num": 57, "banca": "CEBRASPE (CESPE) - AFRE (SEFAZ AL)/SEFAZ AL/2020", "body": "O departamento de produção de determinada empresa necessita ratear os seus custos indiretos a dois produtos A e Z. O departamento de contabilidade de custos dessa empresa estuda o critério mais adequado para efetivar o referido rateio, entre os quatro seguintes critérios: matéria-prima aplicada; mão de obra direta aplicada; horas-máquina utilizadas; custo direto total.\n \n\nCom base nas informações apresentadas, julgue o item a seguir.\n \n\nSe as análises indicarem que os custos indiretos são fortemente influenciados por fatores relacionados ao consumo de matéria-prima e à utilização de máquinas, será apropriada a eleição de um critério misto.", "gabarito": "Certo", "seq": 45, "explicacao": "A assertiva está correta conforme o gabarito. O ponto central é distinguir corretamente terminologia de custos, classificação, custeio e finalidade gerencial da informação."}, {"orig_num": 59, "banca": "CEBRASPE (CESPE) - Ana Min (MPE CE)/MPE CE/Ciências Contábeis/2020", "body": "A respeito dos sistemas de custos e de informações gerenciais, julgue o item subsequente.\n \n\nO sistema de custeio por absorção é utilizado especificamente quando os produtos são fabricados por métodos de produção em massa ou em processo contínuo.", "gabarito": "Errado", "seq": 46, "explicacao": "A assertiva está incorreta conforme o gabarito. O ponto central é distinguir corretamente terminologia de custos, classificação, custeio e finalidade gerencial da informação."}, {"orig_num": 60, "banca": "CEBRASPE (CESPE) - ATM (Pref Fortaleza)/Pref Fortaleza/2023", "body": "Julgue o item seguinte, relacionado ao cálculo do custo unitário de um produto.\n \n\nO equivalente de produção é aplicável ao produto que venha a apresentar unidades inacabadas na data em que se estiver procedendo ao cálculo do seu custo unitário.", "gabarito": "Certo", "seq": 47, "explicacao": "Equivalente de produção é usado quando há unidades em elaboração no fim do período, permitindo calcular o custo unitário considerando o grau de acabamento."}, {"orig_num": 61, "banca": "CEBRASPE (CESPE) - Ana Jr (TBG)/TBG/Contábil/2023", "body": "Julgue o item subsequente, a respeito da contabilidade de custos e suas aplicações.\n \n\nEnquanto uma oficina mecânica tem no custeio por ordem de serviços sua melhor forma de apuração de custos, a refinaria que produz o combustível que abastece os veículos trabalhados na oficina pode ter no custeio por processo a melhor metodologia para a apuração de seus custos.", "gabarito": "Certo", "seq": 48, "explicacao": "Oficina tende a usar custeio por ordem, pois cada serviço é específico. Refinaria tende a usar custeio por processo, pois há produção contínua e padronizada."}, {"orig_num": 62, "banca": "CEBRASPE (CESPE) - Ana Min (MPE CE)/MPE CE/Ciências Contábeis/2020", "body": "A respeito dos sistemas de custos e de informações gerenciais, julgue o item subsequente.\n\nNo sistema de acumulação de custos por atividades, o cálculo do custo unitário para cada ordem corresponde ao custo total dividido pelo número de unidades efetuadas na ordem de produção.", "gabarito": "Errado", "seq": 49, "explicacao": "A assertiva está incorreta conforme o gabarito. O ponto central é distinguir corretamente terminologia de custos, classificação, custeio e finalidade gerencial da informação."}, {"orig_num": 63, "banca": "CEBRASPE (CESPE) - AFTM (Pref Mossoró)/Pref Mossoró/Ciências Contábeis/2024", "body": "Com relação à técnica de departamentalização e aos tipos de custeio, julgue o item seguinte.\n \n\nEm um sistema de departamentalização, os custos dos departamentos de serviços são, em geral, custos indiretamente atribuídos aos produtos, ao passo que os departamentos de produção repassam seus custos diretamente aos produtos.", "gabarito": "Certo", "seq": 50, "explicacao": "Departamentos de serviços normalmente prestam apoio e seus custos são repassados aos produtos de forma indireta; departamentos de produção se relacionam mais diretamente com os produtos."}];
+let index = Number(localStorage.getItem("pm_premium_cespe_teorico_index")) || 0;
+if (index < 0 || index >= cards.length) index = 0;
+
+function render() {
+    const c = cards[index];
+    document.getElementById("banca").textContent = c.banca;
+    document.getElementById("question").textContent = (index + 1) + ") " + c.body;
+    document.getElementById("counter").textContent = (index + 1) + "/" + cards.length;
+    document.getElementById("bar").style.width = (((index + 1) / cards.length) * 100) + "%";
+    document.getElementById("gab").textContent = "Gabarito: " + c.gabarito;
+    document.getElementById("exp").textContent = c.explicacao;
+    document.getElementById("studentAnswer").value = localStorage.getItem("pm_answer_" + index) || "";
+    document.getElementById("solution").classList.remove("show");
+    document.getElementById("pauseText").style.display = "flex";
+    document.getElementById("studentAnswerShow").textContent = "";
+    localStorage.setItem("pm_premium_cespe_teorico_index", index);
+}
+
+function checkAnswer() {
+    const txt = document.getElementById("studentAnswer").value.trim();
+    localStorage.setItem("pm_answer_" + index, txt);
+    document.getElementById("pauseText").style.display = "none";
+    document.getElementById("solution").classList.add("show");
+    document.getElementById("studentAnswerShow").textContent = txt 
+        ? "Resposta escrita pelo aluno:\n" + txt 
+        : "Resposta escrita pelo aluno: não preenchida.";
+}
+
+function nextQuestion() {
+    if (index < cards.length - 1) {
+        index++;
+        render();
+    }
+}
+
+function prevQuestion() {
+    if (index > 0) {
+        index--;
+        render();
+    }
+}
+
+document.addEventListener("keydown", function(e) {
+    if (e.key === "ArrowRight") nextQuestion();
+    if (e.key === "ArrowLeft") prevQuestion();
+    if (e.key === "Enter" && e.ctrlKey) checkAnswer();
+});
+
+render();
+</script>
+</body>
+</html>
