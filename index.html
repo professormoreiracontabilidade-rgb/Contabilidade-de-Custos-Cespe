@@ -77,6 +77,7 @@
         min-height: 0;
     }
     .question-card {
+        position: relative;
         background: var(--rosa);
         border: 3px solid var(--azul-escuro);
         border-radius: 18px;
@@ -186,11 +187,12 @@
         min-height: 0;
         background: #e4ebf5;
         border-radius: 18px;
-        padding: 20px 20px 34px 38px;
+        padding: 10px;
         border: 3px solid #b7c7da;
         box-shadow: inset 0 0 0 2px rgba(255,255,255,.7);
     }
     .ruler-h {
+        display: none;
         position: absolute;
         left: 38px;
         right: 18px;
@@ -201,6 +203,7 @@
         border-radius: 4px;
     }
     .ruler-v {
+        display: none;
         position: absolute;
         left: 8px;
         top: 20px;
@@ -320,6 +323,23 @@
         cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><path d='M5 27 L9 19 L22 6 L26 10 L13 23 Z' fill='%230b57d0' stroke='black' stroke-width='1'/><path d='M22 6 L25 3 L29 7 L26 10 Z' fill='%23111'/></svg>") 4 28, crosshair;
         border-radius: 14px;
     }
+    .question-canvas {
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 16px;
+        z-index: 25;
+    }
+    .question-card .banca,
+    .question-card .qtext,
+    .question-card .options {
+        position: relative;
+        z-index: 2;
+    }
+    .draw-canvas.pen-cursor {
+        cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 36 36'><path d='M6 30 L10 21 L25 6 L30 11 L15 26 Z' fill='%230b57d0' stroke='%23000' stroke-width='1.4'/><path d='M25 6 L29 2 L34 7 L30 11 Z' fill='%23111'/><circle cx='7' cy='30' r='2' fill='%230b57d0'/></svg>") 5 31, crosshair;
+    }
+
     .board-content {
         position: relative;
         z-index: 2;
@@ -408,6 +428,7 @@
                     <div class="opt" id="optCerto" onclick="selectOption('Certo')">Certo</div>
                     <div class="opt" id="optErrado" onclick="selectOption('Errado')">Errado</div>
                 </div>
+                <canvas id="questionCanvas" class="draw-canvas question-canvas pen-cursor"></canvas>
             </div>
 
             <div class="left-buttons">
@@ -446,9 +467,11 @@
                 <button class="tool-btn" id="penBlack" onclick="setTool('pen', '#111111', 5)">Caneta preta</button>
                 <button class="tool-btn" id="penFine" onclick="setTool('pen', currentColor, 2.5)">Fina</button>
                 <button class="tool-btn" id="penMedium" onclick="setTool('pen', currentColor, 7)">Média</button>
-                <button class="tool-btn" id="marker" onclick="setTool('marker', '#ffe66b', 16)">Marca-texto</button>
-                <button class="tool-btn" id="eraser" onclick="setTool('eraser', '#ffffff', 24)">Borracha</button>
-                <button class="tool-btn clear" onclick="clearBoard()">Limpar</button>
+                <button class="tool-btn" id="marker" onclick="setTool('marker', '#ffe66b', 18)">Marca-texto</button>
+                <button class="tool-btn" id="lineH" onclick="setTool('lineH', currentColor, currentSize)">Reta H</button>
+                <button class="tool-btn" id="lineV" onclick="setTool('lineV', currentColor, currentSize)">Reta V</button>
+                <button class="tool-btn" id="eraser" onclick="setTool('eraser', '#ffffff', 30)">Borracha</button>
+                <button class="tool-btn clear" onclick="clearBoard()">Limpar tudo</button>
             </div>
         </section>
     </main>
@@ -576,9 +599,15 @@ function prevQuestion() {
 }
 
 
-// ===== LOUSA DIGITAL FUNCIONAL =====
-const canvas = document.getElementById("drawCanvas");
-const ctx = canvas.getContext("2d");
+
+// ===== LOUSA DIGITAL FUNCIONAL PREMIUM: ÁREA TODA ESCREVÍVEL =====
+const canvases = [
+    document.getElementById("drawCanvas"),
+    document.getElementById("questionCanvas")
+].filter(Boolean);
+
+const canvasState = new Map();
+let activeCanvas = null;
 let drawing = false;
 let currentTool = "pen";
 let currentColor = "#0b57d0";
@@ -586,29 +615,49 @@ let currentSize = 6;
 let currentAlpha = 1;
 let lastX = 0;
 let lastY = 0;
+let startX = 0;
+let startY = 0;
 
-function resizeCanvas() {
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    if (!rect.width || !rect.height) return;
-    const dpr = window.devicePixelRatio || 1;
-    const old = document.createElement("canvas");
-    old.width = canvas.width;
-    old.height = canvas.height;
-    if (canvas.width && canvas.height) old.getContext("2d").drawImage(canvas, 0, 0);
-
-    canvas.width = Math.round(rect.width * dpr);
-    canvas.height = Math.round(rect.height * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.imageSmoothingEnabled = true;
-
-    if (old.width && old.height) ctx.drawImage(old, 0, 0, rect.width, rect.height);
+function initCanvas(cnv) {
+    const ctxLocal = cnv.getContext("2d", { alpha: true });
+    canvasState.set(cnv, { ctx: ctxLocal });
+    cnv.classList.add("pen-cursor");
 }
 
-function point(e) {
-    const rect = canvas.getBoundingClientRect();
+function resizeOneCanvas(cnv) {
+    if (!cnv) return;
+    const rect = cnv.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+
+    const state = canvasState.get(cnv);
+    const ctxLocal = state.ctx;
+    const dpr = window.devicePixelRatio || 1;
+
+    const old = document.createElement("canvas");
+    old.width = cnv.width;
+    old.height = cnv.height;
+    if (cnv.width && cnv.height) {
+        old.getContext("2d").drawImage(cnv, 0, 0);
+    }
+
+    cnv.width = Math.round(rect.width * dpr);
+    cnv.height = Math.round(rect.height * dpr);
+    ctxLocal.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctxLocal.lineCap = "round";
+    ctxLocal.lineJoin = "round";
+    ctxLocal.imageSmoothingEnabled = true;
+
+    if (old.width && old.height) {
+        ctxLocal.drawImage(old, 0, 0, rect.width, rect.height);
+    }
+}
+
+function resizeCanvas() {
+    canvases.forEach(resizeOneCanvas);
+}
+
+function point(e, cnv) {
+    const rect = cnv.getBoundingClientRect();
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
 }
 
@@ -616,63 +665,117 @@ function setTool(tool, color, size) {
     currentTool = tool;
     currentColor = color || currentColor;
     currentSize = size || currentSize;
-    currentAlpha = tool === "marker" ? 0.42 : 1;
+    currentAlpha = tool === "marker" ? 0.38 : 1;
+
     document.querySelectorAll(".tool-btn").forEach(btn => btn.classList.remove("active"));
     if (tool === "eraser") document.getElementById("eraser")?.classList.add("active");
     else if (tool === "marker") document.getElementById("marker")?.classList.add("active");
+    else if (tool === "lineH") document.getElementById("lineH")?.classList.add("active");
+    else if (tool === "lineV") document.getElementById("lineV")?.classList.add("active");
     else if (currentColor === "#0b57d0") document.getElementById("penBlue")?.classList.add("active");
     else if (currentColor === "#d00000") document.getElementById("penRed")?.classList.add("active");
     else document.getElementById("penBlack")?.classList.add("active");
-    canvas.style.cursor = tool === "eraser" ? "cell" : 'url("data:image/svg+xml;utf8,<svg xmlns=\\\'http://www.w3.org/2000/svg\\\' width=\\\'32\\\' height=\\\'32\\\' viewBox=\\\'0 0 32 32\\\'><path d=\\\'M5 27 L9 19 L22 6 L26 10 L13 23 Z\\\' fill=\\\'%230b57d0\\\' stroke=\\\'black\\\' stroke-width=\\\'1\\\'/><path d=\\\'M22 6 L25 3 L29 7 L26 10 Z\\\' fill=\\\'%23111\\\'/></svg>") 4 28, crosshair';
+
+    canvases.forEach(cnv => cnv.style.cursor =
+        'url("data:image/svg+xml;utf8,<svg xmlns=\\\'http://www.w3.org/2000/svg\\\' width=\\\'36\\\' height=\\\'36\\\' viewBox=\\\'0 0 36 36\\\'><path d=\\\'M6 30 L10 21 L25 6 L30 11 L15 26 Z\\\' fill=\\\'%230b57d0\\\' stroke=\\\'black\\\' stroke-width=\\\'1.4\\\'/><path d=\\\'M25 6 L29 2 L34 7 L30 11 Z\\\' fill=\\\'%23111\\\'/></svg>") 5 31, crosshair'
+    );
 }
 
-function draw(x1, y1, x2, y2) {
-    ctx.save();
-    ctx.globalCompositeOperation = currentTool === "eraser" ? "destination-out" : "source-over";
-    ctx.globalAlpha = currentAlpha;
-    ctx.strokeStyle = currentColor;
-    ctx.lineWidth = currentTool === "eraser" ? Math.max(currentSize, 24) : currentSize;
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    ctx.stroke();
-    ctx.restore();
+function drawSegment(cnv, x1, y1, x2, y2, pressure = 0.5) {
+    const { ctx: ctxLocal } = canvasState.get(cnv);
+    const sizeBoost = Math.max(1, pressure * 1.35);
+    const width = currentTool === "eraser" ? Math.max(currentSize, 30) : currentSize * sizeBoost;
+
+    ctxLocal.save();
+    ctxLocal.globalCompositeOperation = currentTool === "eraser" ? "destination-out" : "source-over";
+    ctxLocal.globalAlpha = currentAlpha;
+    ctxLocal.strokeStyle = currentColor;
+    ctxLocal.lineWidth = width;
+    ctxLocal.beginPath();
+
+    // Curva suave: evita escrita falhada/pontilhada e deixa a mesa mais macia.
+    const midX = (x1 + x2) / 2;
+    const midY = (y1 + y2) / 2;
+    ctxLocal.moveTo(x1, y1);
+    ctxLocal.quadraticCurveTo(x1, y1, midX, midY);
+    ctxLocal.stroke();
+    ctxLocal.restore();
+}
+
+function drawStraightLine(cnv, x1, y1, x2, y2) {
+    const { ctx: ctxLocal } = canvasState.get(cnv);
+    ctxLocal.save();
+    ctxLocal.globalCompositeOperation = currentTool === "eraser" ? "destination-out" : "source-over";
+    ctxLocal.globalAlpha = currentAlpha;
+    ctxLocal.strokeStyle = currentColor;
+    ctxLocal.lineWidth = currentTool === "eraser" ? Math.max(currentSize, 30) : currentSize;
+    ctxLocal.lineCap = "round";
+    ctxLocal.lineJoin = "round";
+    ctxLocal.beginPath();
+    ctxLocal.moveTo(x1, y1);
+    ctxLocal.lineTo(x2, y2);
+    ctxLocal.stroke();
+    ctxLocal.restore();
 }
 
 function startDraw(e) {
     e.preventDefault();
-    resizeCanvas();
-    const p = point(e);
+    activeCanvas = e.currentTarget;
+    resizeOneCanvas(activeCanvas);
+    const p = point(e, activeCanvas);
     drawing = true;
-    lastX = p.x; lastY = p.y;
-    try { canvas.setPointerCapture(e.pointerId); } catch(err) {}
-    draw(lastX, lastY, lastX + 0.2, lastY + 0.2);
+    startX = lastX = p.x;
+    startY = lastY = p.y;
+    try { activeCanvas.setPointerCapture(e.pointerId); } catch(err) {}
+
+    if (currentTool !== "lineH" && currentTool !== "lineV") {
+        drawSegment(activeCanvas, lastX, lastY, lastX + 0.35, lastY + 0.35, e.pressure || 0.65);
+    }
 }
 
 function moveDraw(e) {
-    if (!drawing) return;
+    if (!drawing || !activeCanvas) return;
     e.preventDefault();
-    const p = point(e);
-    draw(lastX, lastY, p.x, p.y);
-    lastX = p.x; lastY = p.y;
+
+    const events = typeof e.getCoalescedEvents === "function" ? e.getCoalescedEvents() : [e];
+    for (const ev of events) {
+        const p = point(ev, activeCanvas);
+        if (currentTool !== "lineH" && currentTool !== "lineV") {
+            drawSegment(activeCanvas, lastX, lastY, p.x, p.y, ev.pressure || 0.7);
+        }
+        lastX = p.x;
+        lastY = p.y;
+    }
 }
 
 function endDraw(e) {
-    if (!drawing) return;
+    if (!drawing || !activeCanvas) return;
     e.preventDefault();
+
+    const p = point(e, activeCanvas);
+    if (currentTool === "lineH") drawStraightLine(activeCanvas, startX, startY, p.x, startY);
+    if (currentTool === "lineV") drawStraightLine(activeCanvas, startX, startY, startX, p.y);
+
     drawing = false;
-    try { canvas.releasePointerCapture(e.pointerId); } catch(err) {}
+    try { activeCanvas.releasePointerCapture(e.pointerId); } catch(err) {}
+    activeCanvas = null;
 }
 
 function clearBoard() {
-    const rect = canvas.getBoundingClientRect();
-    ctx.clearRect(0, 0, rect.width, rect.height);
+    canvases.forEach(cnv => {
+        const rect = cnv.getBoundingClientRect();
+        const { ctx: ctxLocal } = canvasState.get(cnv);
+        ctxLocal.clearRect(0, 0, rect.width, rect.height);
+    });
 }
 
-canvas.addEventListener("pointerdown", startDraw, { passive: false });
-canvas.addEventListener("pointermove", moveDraw, { passive: false });
-canvas.addEventListener("pointerup", endDraw, { passive: false });
-canvas.addEventListener("pointercancel", endDraw, { passive: false });
+canvases.forEach(cnv => {
+    initCanvas(cnv);
+    cnv.addEventListener("pointerdown", startDraw, { passive: false });
+    cnv.addEventListener("pointermove", moveDraw, { passive: false });
+    cnv.addEventListener("pointerup", endDraw, { passive: false });
+    cnv.addEventListener("pointercancel", endDraw, { passive: false });
+});
 window.addEventListener("resize", resizeCanvas);
 setTimeout(resizeCanvas, 200);
 setTimeout(resizeCanvas, 800);
