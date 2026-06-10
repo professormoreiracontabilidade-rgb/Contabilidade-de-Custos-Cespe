@@ -331,10 +331,14 @@
         z-index: 25;
     }
     .question-card .banca,
-    .question-card .qtext,
-    .question-card .options {
+    .question-card .qtext {
         position: relative;
         z-index: 2;
+    }
+    .question-card .options {
+        position: relative;
+        z-index: 45;
+        pointer-events: auto;
     }
     .draw-canvas.pen-cursor {
         cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 36 36'><path d='M6 30 L10 21 L25 6 L30 11 L15 26 Z' fill='%230b57d0' stroke='%23000' stroke-width='1.4'/><path d='M25 6 L29 2 L34 7 L30 11 Z' fill='%23111'/><circle cx='7' cy='30' r='2' fill='%230b57d0'/></svg>") 5 31, crosshair;
@@ -553,7 +557,19 @@ function render() {
     }
     localStorage.setItem("pm_premium_cespe_teorico_100_index", index);
     updateScore();
-    setTimeout(resizeCanvas, 60);
+    setTimeout(function(){
+        resizeCanvas();
+        clearQuestionCanvasOnly();
+    }, 60);
+}
+
+
+function clearQuestionCanvasOnly() {
+    const cnv = document.getElementById("questionCanvas");
+    if (!cnv || !canvasState.has(cnv)) return;
+    const rect = cnv.getBoundingClientRect();
+    const { ctx: ctxLocal } = canvasState.get(cnv);
+    ctxLocal.clearRect(0, 0, rect.width, rect.height);
 }
 
 function checkAnswer() {
