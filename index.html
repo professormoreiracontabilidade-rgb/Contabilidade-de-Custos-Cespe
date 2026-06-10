@@ -309,25 +309,24 @@
     .pen.red { background: #d00000; }
     .marker { background: #ffe66b; height: 11px; }
 
+    /* LOUSA FUNCIONAL - CAMADA DE ESCRITA */
     .board {
         position: relative;
     }
-    .ink-layer {
+    #inkCanvas {
         position: absolute;
-        left: 18px;
-        top: 18px;
-        right: 18px;
-        bottom: 18px;
-        width: calc(100% - 36px);
-        height: calc(100% - 36px);
-        z-index: 50;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 20;
         touch-action: none;
-        cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><path d='M5 27 L9 19 L22 6 L26 10 L13 23 Z' fill='%230b57d0' stroke='black' stroke-width='1'/><path d='M22 6 L25 3 L29 7 L26 10 Z' fill='%23111'/></svg>") 4 28, crosshair;
         background: transparent;
+        cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><path d='M5 27 L9 19 L22 6 L26 10 L13 23 Z' fill='%230b57d0' stroke='black' stroke-width='1'/><path d='M22 6 L25 3 L29 7 L26 10 Z' fill='%23111'/></svg>") 4 28, crosshair;
     }
-    .board-content {
+    #pauseText, #solution {
         position: relative;
-        z-index: 2;
+        z-index: 5;
         pointer-events: none;
     }
     .tool-btn {
@@ -432,7 +431,6 @@
                 <div class="ruler-v"></div>
                 <div class="ruler-h"></div>
                 <div class="board" id="board">
-                    <div class="board-content">
                     <div class="pause" id="pauseText">
                         MARQUE CERTO OU ERRADO<br>
                         PARE O VÍDEO E PENSE<br>
@@ -444,17 +442,18 @@
                         <div class="gab" id="gab"></div>
                         <div class="exp" id="exp"></div>
                     </div>
-                    <canvas id="inkCanvas" class="ink-layer"></canvas>
+                    <canvas id="inkCanvas"></canvas>
                 </div>
             </div>
 
             <div class="tools">
-                <button class="tool-btn active" id="toolBlue" onclick="setPen('#0b57d0', 6, 'blue')">Caneta azul</button>
-                <button class="tool-btn" id="toolRed" onclick="setPen('#d00000', 6, 'red')">Caneta vermelha</button>
-                <button class="tool-btn" id="toolBlack" onclick="setPen('#111111', 6, 'black')">Caneta preta</button>
-                <button class="tool-btn" id="toolFine" onclick="setPen(currentColor, 3, 'fine')">Fina</button>
-                <button class="tool-btn" id="toolMedium" onclick="setPen(currentColor, 8, 'medium')">Média</button>
-                <button class="tool-btn" id="toolEraser" onclick="setEraser()">Borracha</button>
+                <button class="tool-btn active" id="blueBtn" onclick="setPen('#0b57d0', 6, false, this)">Caneta azul</button>
+                <button class="tool-btn" onclick="setPen('#d00000', 6, false, this)">Caneta vermelha</button>
+                <button class="tool-btn" onclick="setPen('#111111', 6, false, this)">Caneta preta</button>
+                <button class="tool-btn" onclick="setPen(currentColor, 3, false, this)">Fina</button>
+                <button class="tool-btn" onclick="setPen(currentColor, 9, false, this)">Média</button>
+                <button class="tool-btn" onclick="setPen('#ffe66b', 18, false, this, 0.45)">Marca-texto</button>
+                <button class="tool-btn" onclick="setPen('#ffffff', 28, true, this)">Borracha</button>
                 <button class="tool-btn clear" onclick="clearInk()">Limpar</button>
             </div>
         </section>
@@ -491,7 +490,7 @@ function saveResult(isCorrect) {
     results[index] = isCorrect ? "ok" : "no";
     localStorage.setItem("pm_results_100", JSON.stringify(results));
     updateScore();
-    setTimeout(fitInkCanvas, 80);
+    setTimeout(resizeInkCanvas, 80);
 }
 
 function updateScore() {
@@ -570,131 +569,7 @@ function checkAnswer() {
 function nextQuestion() {
     if (index < cards.length - 1) {
         index++;
-        
-// ===== LOUSA DIGITAL FUNCIONAL =====
-const inkCanvas = document.getElementById("inkCanvas");
-const ink = inkCanvas.getContext("2d");
-let isDrawing = false;
-let currentColor = "#0b57d0";
-let currentWidth = 6;
-let erasing = false;
-let lastPoint = null;
-
-function fitInkCanvas() {
-    const rect = inkCanvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-
-    const snapshot = document.createElement("canvas");
-    snapshot.width = inkCanvas.width;
-    snapshot.height = inkCanvas.height;
-    if (inkCanvas.width && inkCanvas.height) {
-        snapshot.getContext("2d").drawImage(inkCanvas, 0, 0);
-    }
-
-    inkCanvas.width = Math.max(1, Math.round(rect.width * dpr));
-    inkCanvas.height = Math.max(1, Math.round(rect.height * dpr));
-    inkCanvas.style.width = rect.width + "px";
-    inkCanvas.style.height = rect.height + "px";
-
-    ink.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ink.lineCap = "round";
-    ink.lineJoin = "round";
-    ink.imageSmoothingEnabled = true;
-
-    if (snapshot.width && snapshot.height) {
-        ink.drawImage(snapshot, 0, 0, rect.width, rect.height);
-    }
-}
-
-function getInkPoint(evt) {
-    const rect = inkCanvas.getBoundingClientRect();
-    return {
-        x: evt.clientX - rect.left,
-        y: evt.clientY - rect.top
-    };
-}
-
-function activateButton(id) {
-    document.querySelectorAll(".tool-btn").forEach(b => b.classList.remove("active"));
-    const btn = document.getElementById(id);
-    if (btn) btn.classList.add("active");
-}
-
-function setPen(color, width, id) {
-    currentColor = color;
-    currentWidth = width;
-    erasing = false;
-    if (id === "blue") activateButton("toolBlue");
-    if (id === "red") activateButton("toolRed");
-    if (id === "black") activateButton("toolBlack");
-    if (id === "fine") activateButton("toolFine");
-    if (id === "medium") activateButton("toolMedium");
-    inkCanvas.style.cursor = 'url("data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'32\\' height=\\'32\\' viewBox=\\'0 0 32 32\\'><path d=\\'M5 27 L9 19 L22 6 L26 10 L13 23 Z\\' fill=\\'%230b57d0\\' stroke=\\'black\\' stroke-width=\\'1\\'/><path d=\\'M22 6 L25 3 L29 7 L26 10 Z\\' fill=\\'%23111\\'/></svg>") 4 28, crosshair';
-}
-
-function setEraser() {
-    erasing = true;
-    currentWidth = 26;
-    activateButton("toolEraser");
-    inkCanvas.style.cursor = "cell";
-}
-
-function clearInk() {
-    const rect = inkCanvas.getBoundingClientRect();
-    ink.clearRect(0, 0, rect.width, rect.height);
-}
-
-function strokeTo(point) {
-    if (!lastPoint) {
-        lastPoint = point;
-    }
-    ink.save();
-    ink.globalCompositeOperation = erasing ? "destination-out" : "source-over";
-    ink.globalAlpha = 1;
-    ink.strokeStyle = currentColor;
-    ink.lineWidth = currentWidth;
-    ink.beginPath();
-    ink.moveTo(lastPoint.x, lastPoint.y);
-    ink.lineTo(point.x, point.y);
-    ink.stroke();
-    ink.restore();
-    lastPoint = point;
-}
-
-function beginInk(evt) {
-    evt.preventDefault();
-    fitInkCanvas();
-    isDrawing = true;
-    lastPoint = getInkPoint(evt);
-    try { inkCanvas.setPointerCapture(evt.pointerId); } catch(e) {}
-    strokeTo({ x: lastPoint.x + 0.2, y: lastPoint.y + 0.2 });
-}
-
-function moveInk(evt) {
-    if (!isDrawing) return;
-    evt.preventDefault();
-    strokeTo(getInkPoint(evt));
-}
-
-function endInk(evt) {
-    if (!isDrawing) return;
-    evt.preventDefault();
-    isDrawing = false;
-    lastPoint = null;
-    try { inkCanvas.releasePointerCapture(evt.pointerId); } catch(e) {}
-}
-
-inkCanvas.addEventListener("pointerdown", beginInk, { passive: false });
-inkCanvas.addEventListener("pointermove", moveInk, { passive: false });
-inkCanvas.addEventListener("pointerup", endInk, { passive: false });
-inkCanvas.addEventListener("pointercancel", endInk, { passive: false });
-inkCanvas.addEventListener("lostpointercapture", endInk, { passive: false });
-
-window.addEventListener("resize", fitInkCanvas);
-setTimeout(fitInkCanvas, 300);
-setTimeout(fitInkCanvas, 1000);
-
-render();
+        render();
     }
 }
 
@@ -712,6 +587,110 @@ document.addEventListener("keydown", function(e) {
     if (e.key.toLowerCase() === "e") selectOption("Errado");
     if (e.key === "Enter" && e.ctrlKey) checkAnswer();
 });
+
+
+// ===== LOUSA DIGITAL FUNCIONAL =====
+const inkCanvas = document.getElementById("inkCanvas");
+const inkCtx = inkCanvas.getContext("2d");
+let isWriting = false;
+let currentColor = "#0b57d0";
+let currentSize = 6;
+let isEraser = false;
+let currentAlpha = 1;
+let last = null;
+
+function resizeInkCanvas() {
+    const rect = inkCanvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const old = document.createElement("canvas");
+    old.width = inkCanvas.width;
+    old.height = inkCanvas.height;
+    if (old.width && old.height) {
+        old.getContext("2d").drawImage(inkCanvas, 0, 0);
+    }
+
+    inkCanvas.width = Math.round(rect.width * dpr);
+    inkCanvas.height = Math.round(rect.height * dpr);
+    inkCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    inkCtx.lineCap = "round";
+    inkCtx.lineJoin = "round";
+
+    if (old.width && old.height) {
+        inkCtx.drawImage(old, 0, 0, rect.width, rect.height);
+    }
+}
+
+function setPen(color, size, eraser, btn, alpha = 1) {
+    currentColor = color || currentColor;
+    currentSize = size || currentSize;
+    isEraser = !!eraser;
+    currentAlpha = alpha;
+
+    document.querySelectorAll(".tool-btn").forEach(b => b.classList.remove("active"));
+    if (btn) btn.classList.add("active");
+
+    inkCanvas.style.cursor = eraser
+        ? "cell"
+        : 'url("data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'32\\' height=\\'32\\' viewBox=\\'0 0 32 32\\'><path d=\\'M5 27 L9 19 L22 6 L26 10 L13 23 Z\\' fill=\\'%230b57d0\\' stroke=\\'black\\' stroke-width=\\'1\\'/><path d=\\'M22 6 L25 3 L29 7 L26 10 Z\\' fill=\\'%23111\\'/></svg>") 4 28, crosshair';
+}
+
+function pointFromEvent(e) {
+    const r = inkCanvas.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+function drawSegment(a, b) {
+    inkCtx.save();
+    inkCtx.globalCompositeOperation = isEraser ? "destination-out" : "source-over";
+    inkCtx.globalAlpha = currentAlpha;
+    inkCtx.strokeStyle = currentColor;
+    inkCtx.lineWidth = currentSize;
+    inkCtx.beginPath();
+    inkCtx.moveTo(a.x, a.y);
+    inkCtx.lineTo(b.x, b.y);
+    inkCtx.stroke();
+    inkCtx.restore();
+}
+
+function startInk(e) {
+    e.preventDefault();
+    resizeInkCanvas();
+    isWriting = true;
+    last = pointFromEvent(e);
+    try { inkCanvas.setPointerCapture(e.pointerId); } catch(err) {}
+    drawSegment(last, { x: last.x + 0.1, y: last.y + 0.1 });
+}
+
+function moveInk(e) {
+    if (!isWriting) return;
+    e.preventDefault();
+    const p = pointFromEvent(e);
+    drawSegment(last, p);
+    last = p;
+}
+
+function stopInk(e) {
+    if (!isWriting) return;
+    e.preventDefault();
+    isWriting = false;
+    last = null;
+    try { inkCanvas.releasePointerCapture(e.pointerId); } catch(err) {}
+}
+
+function clearInk() {
+    const r = inkCanvas.getBoundingClientRect();
+    inkCtx.clearRect(0, 0, r.width, r.height);
+}
+
+inkCanvas.addEventListener("pointerdown", startInk, { passive: false });
+inkCanvas.addEventListener("pointermove", moveInk, { passive: false });
+inkCanvas.addEventListener("pointerup", stopInk, { passive: false });
+inkCanvas.addEventListener("pointercancel", stopInk, { passive: false });
+window.addEventListener("resize", resizeInkCanvas);
+setTimeout(resizeInkCanvas, 300);
+setTimeout(resizeInkCanvas, 1000);
 
 render();
 </script>
