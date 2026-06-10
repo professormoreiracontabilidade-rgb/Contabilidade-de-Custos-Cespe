@@ -308,6 +308,45 @@
     .pen.blue { background: #0b57d0; }
     .pen.red { background: #d00000; }
     .marker { background: #ffe66b; height: 11px; }
+
+    .draw-canvas {
+        position: absolute;
+        inset: 18px;
+        width: calc(100% - 36px);
+        height: calc(100% - 36px);
+        z-index: 8;
+        pointer-events: auto;
+        touch-action: none;
+        cursor: crosshair;
+        border-radius: 14px;
+    }
+    .board-content {
+        position: relative;
+        z-index: 2;
+        pointer-events: none;
+    }
+    .tool-btn {
+        border: 2px solid #cbd5e1;
+        background: white;
+        color: var(--azul-escuro);
+        border-radius: 999px;
+        padding: 6px 10px;
+        font-size: 12px;
+        font-weight: 900;
+        cursor: pointer;
+        box-shadow: none;
+    }
+    .tool-btn.active {
+        background: var(--azul-escuro);
+        color: white;
+        border-color: var(--azul-escuro);
+    }
+    .tool-btn.clear {
+        background: #fff2f2;
+        color: #9b1111;
+        border-color: #d00000;
+    }
+
     footer {
         display: grid;
         grid-template-columns: auto 1fr auto;
@@ -388,26 +427,32 @@
                 <div class="ruler-v"></div>
                 <div class="ruler-h"></div>
                 <div class="board" id="board">
-                    <div class="pause" id="pauseText">
-                        MARQUE CERTO OU ERRADO<br>
-                        PARE O VÍDEO E PENSE<br>
-                        CLIQUE EM CONFERIR
+                    <div class="board-content">
+                        <div class="pause" id="pauseText">
+                            MARQUE CERTO OU ERRADO<br>
+                            PARE O VÍDEO E PENSE<br>
+                            CLIQUE EM CONFERIR
+                        </div>
+                        <div class="solution" id="solution">
+                            <div class="sol-title">Resposta comentada</div>
+                            <div class="result" id="result"></div>
+                            <div class="gab" id="gab"></div>
+                            <div class="exp" id="exp"></div>
+                        </div>
                     </div>
-                    <div class="solution" id="solution">
-                        <div class="sol-title">Resposta comentada</div>
-                        <div class="result" id="result"></div>
-                        <div class="gab" id="gab"></div>
-                        <div class="exp" id="exp"></div>
-                    </div>
+                    <canvas id="drawCanvas" class="draw-canvas"></canvas>
                 </div>
             </div>
 
             <div class="tools">
-                <div class="tool"><span class="pen blue"></span>Caneta azul</div>
-                <div class="tool"><span class="pen red"></span>Caneta vermelha</div>
-                <div class="tool"><span class="pen"></span>Caneta preta</div>
-                <div class="tool"><span class="pen marker"></span>Marca-texto</div>
-                <div class="tool">Borracha</div>
+                <button class="tool-btn active" id="penBlue" onclick="setTool('pen', '#0b57d0', 5)">Caneta azul</button>
+                <button class="tool-btn" id="penRed" onclick="setTool('pen', '#d00000', 5)">Caneta vermelha</button>
+                <button class="tool-btn" id="penBlack" onclick="setTool('pen', '#111111', 5)">Caneta preta</button>
+                <button class="tool-btn" id="penFine" onclick="setTool('pen', currentColor, 2.5)">Fina</button>
+                <button class="tool-btn" id="penMedium" onclick="setTool('pen', currentColor, 7)">Média</button>
+                <button class="tool-btn" id="marker" onclick="setTool('marker', '#ffe66b', 16)">Marca-texto</button>
+                <button class="tool-btn" id="eraser" onclick="setTool('eraser', '#ffffff', 24)">Borracha</button>
+                <button class="tool-btn clear" onclick="clearBoard()">Limpar</button>
             </div>
         </section>
     </main>
@@ -443,6 +488,7 @@ function saveResult(isCorrect) {
     results[index] = isCorrect ? "ok" : "no";
     localStorage.setItem("pm_results_100", JSON.stringify(results));
     updateScore();
+    setTimeout(resizeCanvas, 50);
 }
 
 function updateScore() {
@@ -521,7 +567,116 @@ function checkAnswer() {
 function nextQuestion() {
     if (index < cards.length - 1) {
         index++;
-        render();
+        
+// ===== LOUSA DIGITAL WACOM / CANVAS =====
+const canvas = document.getElementById("drawCanvas");
+const ctx = canvas.getContext("2d", { willReadFrequently: false });
+let drawing = false;
+let currentTool = "pen";
+let currentColor = "#0b57d0";
+let currentSize = 5;
+let lastX = 0;
+let lastY = 0;
+
+function resizeCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const old = document.createElement("canvas");
+    old.width = canvas.width;
+    old.height = canvas.height;
+    if (canvas.width && canvas.height) {
+        old.getContext("2d").drawImage(canvas, 0, 0);
+    }
+
+    canvas.width = Math.floor(rect.width * window.devicePixelRatio);
+    canvas.height = Math.floor(rect.height * window.devicePixelRatio);
+    ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.imageSmoothingEnabled = true;
+
+    if (old.width && old.height) {
+        ctx.drawImage(old, 0, 0, rect.width, rect.height);
+    }
+}
+
+function getPoint(e) {
+    const rect = canvas.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+}
+
+function setTool(tool, color, size) {
+    currentTool = tool;
+    currentColor = color || currentColor;
+    currentSize = size || currentSize;
+
+    document.querySelectorAll(".tool-btn").forEach(btn => btn.classList.remove("active"));
+    if (tool === "eraser") {
+        document.getElementById("eraser").classList.add("active");
+    } else if (tool === "marker") {
+        document.getElementById("marker").classList.add("active");
+    } else if (currentColor === "#0b57d0") {
+        document.getElementById("penBlue").classList.add("active");
+    } else if (currentColor === "#d00000") {
+        document.getElementById("penRed").classList.add("active");
+    } else {
+        document.getElementById("penBlack").classList.add("active");
+    }
+}
+
+function drawLine(x1, y1, x2, y2) {
+    ctx.save();
+    ctx.globalCompositeOperation = currentTool === "eraser" ? "destination-out" : "source-over";
+    ctx.globalAlpha = currentTool === "marker" ? 0.38 : 1;
+    ctx.strokeStyle = currentColor;
+    ctx.lineWidth = currentSize;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.quadraticCurveTo(x1, y1, x2, y2);
+    ctx.stroke();
+    ctx.restore();
+}
+
+function startDraw(e) {
+    e.preventDefault();
+    canvas.setPointerCapture?.(e.pointerId);
+    drawing = true;
+    const p = getPoint(e);
+    lastX = p.x;
+    lastY = p.y;
+    drawLine(lastX, lastY, lastX + 0.1, lastY + 0.1);
+}
+
+function moveDraw(e) {
+    if (!drawing) return;
+    e.preventDefault();
+    const p = getPoint(e);
+    drawLine(lastX, lastY, p.x, p.y);
+    lastX = p.x;
+    lastY = p.y;
+}
+
+function endDraw(e) {
+    if (!drawing) return;
+    e.preventDefault();
+    drawing = false;
+    canvas.releasePointerCapture?.(e.pointerId);
+}
+
+function clearBoard() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+canvas.addEventListener("pointerdown", startDraw, { passive: false });
+canvas.addEventListener("pointermove", moveDraw, { passive: false });
+canvas.addEventListener("pointerup", endDraw, { passive: false });
+canvas.addEventListener("pointercancel", endDraw, { passive: false });
+canvas.addEventListener("pointerleave", endDraw, { passive: false });
+
+window.addEventListener("resize", resizeCanvas);
+setTimeout(resizeCanvas, 100);
+
+render();
     }
 }
 
