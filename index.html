@@ -600,7 +600,7 @@ function prevQuestion() {
 
 
 
-// ===== LOUSA DIGITAL FUNCIONAL PREMIUM: ÁREA TODA ESCREVÍVEL =====
+// ===== LOUSA DIGITAL FUNCIONAL PREMIUM: ESCRITA SEM FALHAS =====
 const canvases = [
     document.getElementById("drawCanvas"),
     document.getElementById("questionCanvas")
@@ -613,13 +613,10 @@ let currentTool = "pen";
 let currentColor = "#0b57d0";
 let currentSize = 6;
 let currentAlpha = 1;
-let lastX = 0;
-let lastY = 0;
-let startX = 0;
-let startY = 0;
+let lastX = 0, lastY = 0, startX = 0, startY = 0;
 
 function initCanvas(cnv) {
-    const ctxLocal = cnv.getContext("2d", { alpha: true });
+    const ctxLocal = cnv.getContext("2d", { alpha: true, desynchronized: true });
     canvasState.set(cnv, { ctx: ctxLocal });
     cnv.classList.add("pen-cursor");
 }
@@ -628,33 +625,23 @@ function resizeOneCanvas(cnv) {
     if (!cnv) return;
     const rect = cnv.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
-
     const state = canvasState.get(cnv);
     const ctxLocal = state.ctx;
-    const dpr = window.devicePixelRatio || 1;
-
+    const dpr = Math.max(window.devicePixelRatio || 1, 1);
     const old = document.createElement("canvas");
     old.width = cnv.width;
     old.height = cnv.height;
-    if (cnv.width && cnv.height) {
-        old.getContext("2d").drawImage(cnv, 0, 0);
-    }
-
+    if (cnv.width && cnv.height) old.getContext("2d").drawImage(cnv, 0, 0);
     cnv.width = Math.round(rect.width * dpr);
     cnv.height = Math.round(rect.height * dpr);
     ctxLocal.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctxLocal.lineCap = "round";
     ctxLocal.lineJoin = "round";
     ctxLocal.imageSmoothingEnabled = true;
-
-    if (old.width && old.height) {
-        ctxLocal.drawImage(old, 0, 0, rect.width, rect.height);
-    }
+    if (old.width && old.height) ctxLocal.drawImage(old, 0, 0, rect.width, rect.height);
 }
 
-function resizeCanvas() {
-    canvases.forEach(resizeOneCanvas);
-}
+function resizeCanvas() { canvases.forEach(resizeOneCanvas); }
 
 function point(e, cnv) {
     const rect = cnv.getBoundingClientRect();
@@ -665,8 +652,7 @@ function setTool(tool, color, size) {
     currentTool = tool;
     currentColor = color || currentColor;
     currentSize = size || currentSize;
-    currentAlpha = tool === "marker" ? 0.38 : 1;
-
+    currentAlpha = tool === "marker" ? 0.36 : 1;
     document.querySelectorAll(".tool-btn").forEach(btn => btn.classList.remove("active"));
     if (tool === "eraser") document.getElementById("eraser")?.classList.add("active");
     else if (tool === "marker") document.getElementById("marker")?.classList.add("active");
@@ -675,29 +661,53 @@ function setTool(tool, color, size) {
     else if (currentColor === "#0b57d0") document.getElementById("penBlue")?.classList.add("active");
     else if (currentColor === "#d00000") document.getElementById("penRed")?.classList.add("active");
     else document.getElementById("penBlack")?.classList.add("active");
-
-    canvases.forEach(cnv => cnv.style.cursor =
-        'url("data:image/svg+xml;utf8,<svg xmlns=\\\'http://www.w3.org/2000/svg\\\' width=\\\'36\\\' height=\\\'36\\\' viewBox=\\\'0 0 36 36\\\'><path d=\\\'M6 30 L10 21 L25 6 L30 11 L15 26 Z\\\' fill=\\\'%230b57d0\\\' stroke=\\\'black\\\' stroke-width=\\\'1.4\\\'/><path d=\\\'M25 6 L29 2 L34 7 L30 11 Z\\\' fill=\\\'%23111\\\'/></svg>") 5 31, crosshair'
-    );
 }
 
-function drawSegment(cnv, x1, y1, x2, y2, pressure = 0.5) {
-    const { ctx: ctxLocal } = canvasState.get(cnv);
-    const sizeBoost = Math.max(1, pressure * 1.35);
-    const width = currentTool === "eraser" ? Math.max(currentSize, 30) : currentSize * sizeBoost;
+function effectiveWidth(pressure = 0.9) {
+    if (currentTool === "eraser") return Math.max(currentSize, 34);
+    if (currentTool === "marker") return Math.max(currentSize, 16);
+    // Sensibilidade fácil: mesmo encostando leve, a linha não fica pontilhada.
+    const p = Math.max(pressure || 0, 0.78);
+    return Math.max(currentSize, currentSize * (0.96 + p * 0.22));
+}
 
-    ctxLocal.save();
+function prepareStroke(ctxLocal, pressure) {
     ctxLocal.globalCompositeOperation = currentTool === "eraser" ? "destination-out" : "source-over";
     ctxLocal.globalAlpha = currentAlpha;
     ctxLocal.strokeStyle = currentColor;
-    ctxLocal.lineWidth = width;
-    ctxLocal.beginPath();
+    ctxLocal.fillStyle = currentColor;
+    ctxLocal.lineWidth = effectiveWidth(pressure);
+    ctxLocal.lineCap = "round";
+    ctxLocal.lineJoin = "round";
+    ctxLocal.miterLimit = 2;
+}
 
-    // Curva suave: evita escrita falhada/pontilhada e deixa a mesa mais macia.
-    const midX = (x1 + x2) / 2;
-    const midY = (y1 + y2) / 2;
+function drawDot(cnv, x, y, pressure = 0.9) {
+    const { ctx: ctxLocal } = canvasState.get(cnv);
+    const w = effectiveWidth(pressure);
+    ctxLocal.save();
+    prepareStroke(ctxLocal, pressure);
+    ctxLocal.beginPath();
+    ctxLocal.arc(x, y, w / 2, 0, Math.PI * 2);
+    ctxLocal.fill();
+    ctxLocal.restore();
+}
+
+function drawSegment(cnv, x1, y1, x2, y2, pressure = 0.9) {
+    const { ctx: ctxLocal } = canvasState.get(cnv);
+    const dx = x2 - x1, dy = y2 - y1;
+    const dist = Math.hypot(dx, dy);
+    const w = effectiveWidth(pressure);
+    ctxLocal.save();
+    prepareStroke(ctxLocal, pressure);
+    // Linha contínua com preenchimento dos intervalos entre eventos da Wacom.
+    const steps = Math.max(1, Math.ceil(dist / (w * 0.45)));
+    ctxLocal.beginPath();
     ctxLocal.moveTo(x1, y1);
-    ctxLocal.quadraticCurveTo(x1, y1, midX, midY);
+    for (let i = 1; i <= steps; i++) {
+        const t = i / steps;
+        ctxLocal.lineTo(x1 + dx * t, y1 + dy * t);
+    }
     ctxLocal.stroke();
     ctxLocal.restore();
 }
@@ -705,12 +715,7 @@ function drawSegment(cnv, x1, y1, x2, y2, pressure = 0.5) {
 function drawStraightLine(cnv, x1, y1, x2, y2) {
     const { ctx: ctxLocal } = canvasState.get(cnv);
     ctxLocal.save();
-    ctxLocal.globalCompositeOperation = currentTool === "eraser" ? "destination-out" : "source-over";
-    ctxLocal.globalAlpha = currentAlpha;
-    ctxLocal.strokeStyle = currentColor;
-    ctxLocal.lineWidth = currentTool === "eraser" ? Math.max(currentSize, 30) : currentSize;
-    ctxLocal.lineCap = "round";
-    ctxLocal.lineJoin = "round";
+    prepareStroke(ctxLocal, 0.95);
     ctxLocal.beginPath();
     ctxLocal.moveTo(x1, y1);
     ctxLocal.lineTo(x2, y2);
@@ -727,22 +732,16 @@ function startDraw(e) {
     startX = lastX = p.x;
     startY = lastY = p.y;
     try { activeCanvas.setPointerCapture(e.pointerId); } catch(err) {}
-
-    if (currentTool !== "lineH" && currentTool !== "lineV") {
-        drawSegment(activeCanvas, lastX, lastY, lastX + 0.35, lastY + 0.35, e.pressure || 0.65);
-    }
+    if (currentTool !== "lineH" && currentTool !== "lineV") drawDot(activeCanvas, lastX, lastY, e.pressure || 0.95);
 }
 
 function moveDraw(e) {
     if (!drawing || !activeCanvas) return;
     e.preventDefault();
-
     const events = typeof e.getCoalescedEvents === "function" ? e.getCoalescedEvents() : [e];
     for (const ev of events) {
         const p = point(ev, activeCanvas);
-        if (currentTool !== "lineH" && currentTool !== "lineV") {
-            drawSegment(activeCanvas, lastX, lastY, p.x, p.y, ev.pressure || 0.7);
-        }
+        if (currentTool !== "lineH" && currentTool !== "lineV") drawSegment(activeCanvas, lastX, lastY, p.x, p.y, ev.pressure || 0.95);
         lastX = p.x;
         lastY = p.y;
     }
@@ -751,11 +750,9 @@ function moveDraw(e) {
 function endDraw(e) {
     if (!drawing || !activeCanvas) return;
     e.preventDefault();
-
     const p = point(e, activeCanvas);
     if (currentTool === "lineH") drawStraightLine(activeCanvas, startX, startY, p.x, startY);
     if (currentTool === "lineV") drawStraightLine(activeCanvas, startX, startY, startX, p.y);
-
     drawing = false;
     try { activeCanvas.releasePointerCapture(e.pointerId); } catch(err) {}
     activeCanvas = null;
@@ -775,6 +772,7 @@ canvases.forEach(cnv => {
     cnv.addEventListener("pointermove", moveDraw, { passive: false });
     cnv.addEventListener("pointerup", endDraw, { passive: false });
     cnv.addEventListener("pointercancel", endDraw, { passive: false });
+    cnv.addEventListener("pointerleave", endDraw, { passive: false });
 });
 window.addEventListener("resize", resizeCanvas);
 setTimeout(resizeCanvas, 200);
